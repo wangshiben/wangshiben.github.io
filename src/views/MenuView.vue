@@ -58,7 +58,7 @@
         <p>{{ message }}</p>
       </div>
       <div v-if="isConnected"> 
-        <el-tree :data="treeData" :props="defaultProps"  />
+        <el-tree :data="treeData" :props="defaultProps" @node-click="confirmDataBase" />
       </div>
 
     </el-main>
@@ -106,7 +106,7 @@ export default {
       defaultProps: {
         children: 'children', // 子节点字段名
         label: 'label' // 节点显示的字段名
-      }
+      },
     };
   },
   components: {
@@ -116,14 +116,18 @@ export default {
         // this.$store.state.JSESSIONID
         getAllDatabase(this.$store.state.JSESSIONID).then(res => {
             const { code, data } = res.data;
-            console.log(res);
+            console.log('mounted res => ',res);
             if (code === 200) {
                 this.databaseList = data;
-                console.log(this.databaseList);
+                console.log('databaseList => ',this.databaseList);
                 this.transformData(); // 转换数据结构
-                
             }
-        }
+        },
+        getAllTable({ database: this.reqObj.database }, this.$store.state.JSESSIONID)
+              .then(res => {
+                  this.tableList = res.data.data;
+                  console.log('tableList => ',this.tableList);
+              })
         );
     },
   methods: {
@@ -138,22 +142,19 @@ export default {
               console.log("submit success");
               // TODO ：连接成功后，显示数据库列表
               getAllDatabase(this.$store.state.JSESSIONID).then(res => {
-              const { code, data } = res.data;
-              
-
-              console.log(res);
-              if (code === 200) {
-                let tempArr=[]
-                res.data.data.forEach((item) =>{
-                    tempArr.push({
-                      label: item,
-                      // children:[]
+                const { code, data } = res.data;
+                console.log('after submit success => ',res);
+                if (code === 200) {
+                  let tempArr=[]
+                  res.data.data.forEach((item) =>{
+                      tempArr.push({
+                        label: item,
+                        children:[{label:null}]
+                      })
                     })
-                  })
-                  this.treeData = tempArr;
-                  console.log(tempArr);
-                  //this.transformData(); // 转换数据结构
-                  this.confirmDataBase();
+                this.treeData = tempArr;
+                console.log('tempArr => ',tempArr);
+                  
               }
           }
         );
@@ -165,46 +166,69 @@ export default {
       } else {
         this.$message.error('请填写完全');
         this.isFull = true;
-      
       }
     },
     transformData() {
       const data = [];
 
-      this.databaseList.forEach(database => {
+      // this.databaseList.forEach(database => {
+      //   // 添加数据库节点
+      //   data.push({
+      //     label: database.name,
+      //     children: [
+      //       {label:null}
+      //     ]
+      //   });
+        this.databaseList.forEach(database => {
         // 添加数据库节点
-        data.push({
-          label: database.name,
-          children: []
-        });
-
+          const databaseNode = {
+            label: database.name,
+            children: [
+              { label: null }
+            ]     
+        };
+        data.push(databaseNode);
+        
+        // console.log('push tableList => ',this.tableList);
         // 添加表节点
-        if (database.tableList) {
-          this.reqObj.table.forEach(table => {
-            data.push({
+        if (this.tableList) {
+            this.tableList.forEach(table => {
+            const tableNode = {
               label: table.name
-            });
+            };
+            databaseNode.children.push(tableNode);
           });
         }
       });
 
       this.treeData = data; // 将转换后的数据赋值给组件的 data 属性
     },
-    confirmDataBase(data) {
-        console.log(data);
-          this.reqObj.database.name = data.label;
-          console.log(this.reqObj.database);
+    confirmDataBase(data) {  
+      console.log('confirmDataBase => ',data);
+          this.reqObj.database = data.label;
+          console.log('database =>',this.reqObj.database);
           getAllTable({ database: this.reqObj.database }, this.$store.state.JSESSIONID)
               .then(res => {
                   this.tableList = res.data.data;
-                  console.log(res);
+                  console.log('confirmDataBase() tableList => ',this.tableList);
+                  const databaseNode = this.treeData.find(node => node.label === data.label);
+                  console.log('databaseNode',databaseNode)
+                  if (databaseNode) {
+                    databaseNode.children = [];
+                    this.tableList.forEach(table => {
+                        const tableNode = {
+                          label: table
+                        };
+                        databaseNode.children.push(tableNode);
+                    })
+                  }  
               })
           this.isGenCode = false;
           this.isGenZip = false;
-      },
+       },
       confirmTable(data) {
           this.reqObj.table = data.label;
-          console.log(data);
+          console.log('confirmTable-data => ',data);
           this.isGenCode = true;
       },
       confirmPackageName() {
