@@ -8,6 +8,7 @@ async function connectDatabase(query, JSESSIONID) {
 }
 
 async function getAllDatabase(JSESSIONID) {
+    console.log(JSESSIONID)
     return request(allPort.GET_ALL_DATABASE, METHOD.GET, {}, JSESSIONID);
 }
 
