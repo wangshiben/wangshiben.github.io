@@ -31,7 +31,7 @@
         </el-col>
         <el-col :span="3">
           <div class="connect-btn">
-            <el-button type="primary" @click.prevent="submit">连接</el-button>
+            <el-button type="primary" @click.prevent="submit(1)">连接</el-button>
           </div>
         </el-col>
 
@@ -144,7 +144,7 @@ export default {
     });
   },
   methods: {
-     submit() {
+     submit(times) {
       const {url, user, password} = this.reqObj_login;
       if (url && user && password) {
           connectDatabase(this.reqObj_login, this.$store.state.JSESSIONID)
@@ -173,8 +173,7 @@ export default {
                         console.log('tempArr => ', tempArr);
                         this.isConnected = true
                         this.message = null
-
-                        console.log("已强制刷新")
+                        if (times) this.submit(0)
                       }
                     }
                 );
