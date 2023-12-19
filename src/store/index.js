@@ -2,13 +2,14 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state() {
+    let JSESSIONID = window.sessionStorage.getItem("JSESSIONID")
     return {
-      JSESSIONID: "",
+      JSESSIONID,
     }
   },
   mutations: {
     changeMessage(state, JSESSIONID) {
-      state.JSESSIONID = JSESSIONID;
+      window.sessionStorage.setItem("JSESSIONID",JSESSIONID) ;
     },
   }
 })

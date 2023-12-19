@@ -17,8 +17,7 @@ export async function _postAxios(_this, axios_event, obj) {
             JSESSIONID = store.state.JSESSIONID;
             var temp2 = await getAxios(`${allPort.DATABASE_IS_CONNECT}?JSESSIONID=${JSESSIONID}`)//检查是否连接数据库
             // 如果数据库已经连接
-            console.log("temp2");
-            console.log(temp2);
+
 
             if (temp2 === "ok") {
                 router.push({ path: '/login' })//如果没有登录则跳转到登录页面
