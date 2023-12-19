@@ -36,9 +36,8 @@
         </el-col>
 
       </el-row>
-      <el-row v-if=isConnected>
+      <el-row v-if="isConnected">
         <el-col :span="6" class="second-row-left-input">
-
           <el-input id="genCode" placeholder="请输入代码包名" v-model="reqObj.packageName"/>
         </el-col>
         <el-col :span="4">
@@ -54,6 +53,7 @@
       <el-empty v-if="!isConnected">
         请先连接数据库
       </el-empty>
+      <el-alert title="please full pacakage name" type="info" v-if="isAlert"/>
       <div class="hint" v-if="message">
         <p>{{ message }}</p>
       </div>
@@ -107,6 +107,7 @@ export default {
       isGenCode: false,
       isGenZip: false,
       tip: "",
+      isAlert: false,
       zipHref: '',
       // tree part
       treeData: [], // 数据源
@@ -223,45 +224,60 @@ export default {
       this.treeData = data; // 将转换后的数据赋值给组件的 data 属性
     },
     confirmDataBase(data) {
-      console.log('confirmDataBase => ', data);
-      this.reqObj.database = data.label;
-      console.log('database =>', this.reqObj.database);
-      getAllTable({database: this.reqObj.database}, this.$store.state.JSESSIONID)
-          .then(res => {
-            this.tableList = res.data.data;
-            console.log('confirmDataBase() tableList => ', this.tableList);
-            const databaseNode = this.treeData.find(node => node.label === data.label);
-            console.log('databaseNode', databaseNode)
-            if (databaseNode) {
-              databaseNode.children = [];
-              this.tableList.forEach(table => {
-                const tableNode = {
-                  label: table,
-                  leaf: true
-                };
-                databaseNode.children.push(tableNode);
+        // console.log('data.isLeaf => ',data.leaf)
+        // console.log('this.isGenCode => ',this.isGenCode)
+        // console.log('this.isGenZip => ',this.isGenZip)
+        if(!data.leaf){
+          console.log('confirmDataBase => ', data);
+          this.reqObj.database = data.label;
+          
+          getAllTable({database: this.reqObj.database}, this.$store.state.JSESSIONID)
+              .then(res => {
+                this.tableList = res.data.data;
+                console.log('confirmDataBase() tableList => ', this.tableList);
+                const databaseNode = this.treeData.find(node => node.label === data.label);
+                console.log('databaseNode', databaseNode)
+                if (databaseNode) {
+                  databaseNode.children = [];
+                  this.tableList.forEach(table => {
+                    const tableNode = {
+                      label: table,
+                      leaf: true
+                    };
+                    databaseNode.children.push(tableNode);
+                  })
+                }
               })
-            }
-          })
-      this.isGenCode = false;
-      this.isGenZip = false;
+        }else{
+          console.log('the node is table');
+          this.isGenCode = true;
+          this.reqObj.table = data.label;
+        }
+        this.isGenZip = false;
     },
-    confirmTable(data) {
-      this.reqObj.table = data.label;
-      console.log('confirmTable-data => ', data);
-      this.isGenCode = true;
-    },
-    confirmPackageName() {
+    // confirmTable(data) {
+    //   this.reqObj.table = data.label;
+    //   console.log('confirmTable-data => ', data);
+    //   this.isGenCode = true;
+    // },
+    confirmPackageName() { 
       if (this.reqObj.packageName !== '' && this.isGenCode) {
-        generateCode({
+        generateCode({ 
           package_name: this.reqObj.packageName,
           table_name: this.reqObj.table
         }, this.$store.state.JSESSIONID)
             .then(res => {
+              console.log('confirmPackageName() generateCode => ', this.reqObj.packageName);
+              console.log('confirmPackageName() generateCode => ',this.reqObj.table);
               const {code} = res.data;
+              console.log('code => ',code)
               if (code === 200) {
+                console.log('generate success')
                 this.isGenZip = true;
-                this.tip = "代码生成成功"
+                this.tip = "代码生成成功";
+                this.isAlert=true;
+              }else{
+                console.log('confirmPackageName() code fail')
               }
             })
       } else {
@@ -270,7 +286,10 @@ export default {
     },
     confirmZipName() {
       if (this.reqObj.zipName !== '' && this.isGenZip) {
-        this.zipHref = `${allPort.GENERATE_ZIP}/${this.reqObj.zipName}?JSESSIONID=${this.$store.state.JSESSIONID}`
+
+        this.zipHref = `${allPort.GENERATE_ZIP}/${this.reqObj.zipName}?JSESSIONID=${this.$store.state.JSESSIONID}`;
+        console.log('confirmZipName() zipHref => ', this.zipHref);
+        window.open(this.zipHref)
         this.tip = "请点击超链接";
       } else {
         this.tip = "还不能填写压缩包名哦";
@@ -314,5 +333,12 @@ export default {
 
 .second-row-left-input {
   margin-left: 2rem;
+}
+
+.el-alert {
+  margin: 20px 0 0;
+}
+.el-alert:first-child {
+  margin: 0;
 }
 </style>
