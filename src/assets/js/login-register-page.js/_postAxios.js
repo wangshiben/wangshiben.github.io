@@ -21,10 +21,10 @@ export async function _postAxios(_this, axios_event, obj) {
             console.log(temp2);
 
             if (temp2 === "ok") {
-                router.push({ path: '/select' })//如果数据库尚未连接，则直接跳转到。。。。。
+                router.push({ path: '/login' })//如果没有登录则跳转到登录页面
             }
             if (temp2 === "err") {
-                router.push({ path: '/connect' })//如果数据库已经连接，则直接跳转到。。。。。
+                router.push({ path: '/menu' })//如果已经登录，则跳转到menu主页面
             }
         }
     }

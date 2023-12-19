@@ -3,6 +3,7 @@ import { METHOD, request } from '../../utils/request';
 
 async function connectDatabase(query, JSESSIONID) {
     console.log('test');
+    console.log(JSESSIONID);
     return request(allPort.CONNECT_DATABASE, METHOD.POST, query, JSESSIONID);
 }
 

@@ -3,6 +3,7 @@ import RegisterPage from "../views/RegisterPage.vue"
 import LoginPage from "../views/LoginPage.vue"
 import ConnectView from '../views/ConnectView.vue';
 import SelectView from '../views/SelectView.vue';
+import MenuView  from '../views/MenuView.vue';
 
 const routes = [
   {
@@ -28,6 +29,11 @@ const routes = [
     path: '/select',
     name: 'select',
     component: SelectView
+  },
+  {
+    path: '/menu',
+    name: 'menu',
+    component: MenuView
   }
 ]
 const router = createRouter({

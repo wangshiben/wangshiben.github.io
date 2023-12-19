@@ -33,7 +33,7 @@
 import WzcSelect from '../components/wzc-select.vue';
 import WzcOption from '../components/wzc-option.vue';
 import { getAllDatabase, getAllTable, generateCode } from '../service/connect/connect';
-import store from '@/store';
+// import store from '@/store';
 import { allPort } from '@/service/api';
 export default {
     data() {
