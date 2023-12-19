@@ -4,16 +4,16 @@
       <el-row>
         <el-col :span="12"><h1 font="bold">区块链工程214班第一组</h1></el-col>
       </el-row>
-      
+
     </el-header>
     <el-main>
-      <el-row :gutter=20 type="flex" >
+      <el-row :gutter=20 type="flex">
         <el-col :span="9">
           <div class="connect-url">
             <label for="url">url:&nbsp;</label>
-            <el-input v-model="reqObj_login.url" id="url" placeholder="Please input url" required>
-              <template #prepend>jdbc:mysql://</template>
-              </el-input>
+            <el-input v-model="urlInput.value" id="url" placeholder="Please input url" required>
+              <template #prepend>{{ urlInput.prependValue }}</template>
+            </el-input>
           </div>
         </el-col>
         <el-col :span="6">
@@ -26,7 +26,7 @@
         <el-col :span="6">
           <div class="connect-pwd">
             <label for="dbPwd">password:&nbsp;</label>
-            <el-input v-model="reqObj_login.password" id="dbPwd" placeholder="Please input password" show-password />
+            <el-input v-model="reqObj_login.password" id="dbPwd" placeholder="Please input password" show-password/>
           </div>
         </el-col>
         <el-col :span="3">
@@ -36,19 +36,19 @@
         </el-col>
 
       </el-row>
-      <el-row v-if=isConnected >
+      <el-row v-if=isConnected>
         <el-col :span="6" class="second-row-left-input">
-          
-          <el-input id="genCode" placeholder="请输入代码包名" v-model="reqObj.packageName" />
+
+          <el-input id="genCode" placeholder="请输入代码包名" v-model="reqObj.packageName"/>
         </el-col>
         <el-col :span="4">
-          <el-button color="blue" :dark="isDark" @click="confirmPackageName">生成代码</el-button>
+          <el-button color="blue"  @click="confirmPackageName">生成代码</el-button>
         </el-col>
         <el-col :span="6">
-          <el-input id="genZip" placeholder="请输入压缩包名" v-model="reqObj.zipName" />
+          <el-input id="genZip" placeholder="请输入压缩包名" v-model="reqObj.zipName"/>
         </el-col>
         <el-col :span="4">
-          <el-button color="blue" :dark="isDark" @click="confirmZipName">生成压缩包</el-button>
+          <el-button color="blue"  @click="confirmZipName">生成压缩包</el-button>
         </el-col>
       </el-row>
       <el-empty v-if="!isConnected">
@@ -57,29 +57,36 @@
       <div class="hint" v-if="message">
         <p>{{ message }}</p>
       </div>
-      <div v-if="isConnected"> 
-        <el-tree :data="treeData" :props="defaultProps" @node-click="confirmDataBase" />
+      <div v-if="isConnected">
+        <el-tree :data="treeData" :props="defaultProps" @node-click="confirmDataBase" lazy accordion/>
       </div>
 
     </el-main>
     <el-footer>@作者：张锭航、熊灵欣、王一迪、谭明月、方妤心</el-footer>
   </el-container>
 </template>
-  
+
 <script>
-import { connectDatabase } from "../service/connect/connect.js";
-import { getAllDatabase, getAllTable, generateCode } from '../service/connect/connect';
-import { allPort } from '@/service/api';
-import { ElTree } from 'element-plus';
+import {connectDatabase} from "@/service/connect/connect.js";
+import {getAllDatabase, getAllTable, generateCode} from '@/service/connect/connect';
+import {allPort} from '@/service/api';
+import {ElTree} from 'element-plus';
+import {watch} from "vue";
 
 export default {
   name: "MenuView",
+
   data() {
     // login part
     return {
       urlSpan: "url",
       dbNameSpan: "用户名",
       dbPwdSpan: "密码",
+      urlInput: {
+        prependValue: "jdbc:mysql://",
+        value: "localhost:3307"
+      },
+
       reqObj_login: {
         url: "jdbc:mysql://localhost:3307",
         user: "root",
@@ -88,24 +95,25 @@ export default {
       message: "",
       isConnected: false,
       isFull: false,
-    // select database part
+      // select database part
       databaseList: [],
-        tableList: [],
-        reqObj: {
-            database: '',
-            table: '',
-            packageName: '',
-            zipName: '',
-        },
-        isGenCode: false,
-        isGenZip: false,
-        tip: "",
-        zipHref: '',
-        // tree part
+      tableList: [],
+      reqObj: {
+        database: '',
+        table: '',
+        packageName: '',
+        zipName: '',
+      },
+      isGenCode: false,
+      isGenZip: false,
+      tip: "",
+      zipHref: '',
+      // tree part
       treeData: [], // 数据源
       defaultProps: {
         children: 'children', // 子节点字段名
-        label: 'label' // 节点显示的字段名
+        label: 'label', // 节点显示的字段名
+        isLeaf: 'leaf'
       },
     };
   },
@@ -113,60 +121,72 @@ export default {
     ElTree,
   },
   mounted() {
-        // this.$store.state.JSESSIONID
-        getAllDatabase(this.$store.state.JSESSIONID).then(res => {
-            const { code, data } = res.data;
-            console.log('mounted res => ',res);
-            if (code === 200) {
-                this.databaseList = data;
-                console.log('databaseList => ',this.databaseList);
-                this.transformData(); // 转换数据结构
-            }
-        },
-        getAllTable({ database: this.reqObj.database }, this.$store.state.JSESSIONID)
-              .then(res => {
-                  this.tableList = res.data.data;
-                  console.log('tableList => ',this.tableList);
-              })
-        );
-    },
-  methods: {
-    submit() {
-      const { url, user, password } = this.reqObj_login;
-      if (url && user && password) {
-        connectDatabase(this.reqObj_login, this.$store.state.JSESSIONID)
-          .then((response) => {
-            const { code, message } = response.data;
-            console.log(response);
-            if (code === 200) {
-              console.log("submit success");
-              // TODO ：连接成功后，显示数据库列表
-              getAllDatabase(this.$store.state.JSESSIONID).then(res => {
-                const { code, data } = res.data;
-                console.log('after submit success => ',res);
-                if (code === 200) {
-                  let tempArr=[]
-                  res.data.data.forEach((item) =>{
-                      tempArr.push({
-                        label: item,
-                        children:[{label:null}]
-                      })
-                    })
-                this.treeData = tempArr;
-                console.log('tempArr => ',tempArr);
-                  
-              }
+    // this.$store.state.JSESSIONID
+    getAllDatabase(this.$store.state.JSESSIONID).then(res => {
+          const {code, data} = res.data;
+          console.log('mounted res => ', res);
+          if (code === 200) {
+            this.databaseList = data;
+            console.log('databaseList => ', this.databaseList);
+            this.transformData(); // 转换数据结构
           }
-        );
-              this.isConnected = true;
-            } else {
-              this.message = message;
-            }
-          });
+        },
+        getAllTable({database: this.reqObj.database}, this.$store.state.JSESSIONID)
+            .then(res => {
+              this.tableList = res.data.data;
+              console.log('tableList => ', this.tableList);
+            })
+    );
+    watch(() => {
+      return this.urlInput.value;
+    }, (newValue, oldValue) => {
+      this.reqObj_login.url = this.urlInput.prependValue + newValue;
+    });
+  },
+  methods: {
+     submit() {
+      const {url, user, password} = this.reqObj_login;
+      if (url && user && password) {
+          connectDatabase(this.reqObj_login, this.$store.state.JSESSIONID)
+            .then( (response) => {
+              const {code, message} = response.data;
+              console.log(response);
+              if (code === 200) {
+
+                console.log("submit success");
+                // TODO ：连接成功后，显示数据库列表
+                getAllDatabase(this.$store.state.JSESSIONID).then(async res => {
+                      const {code, data} = res.data;
+                      console.log('after submit success => ', res);
+                      if (code === 200) {
+                        let tempArr = []
+                        this.$data.treeData.slice(0,this.$data.treeData.length)
+                        await data.forEach((item) => {
+                          console.log("push完毕")
+                          tempArr.push({
+                            label: item,
+                            // children:[{label:null}]，
+                            leaf: false
+                          })
+                        })
+                        this.treeData = tempArr;
+                        console.log('tempArr => ', tempArr);
+                        this.isConnected = true
+                        this.message = null
+
+                        console.log("已强制刷新")
+                      }
+                    }
+                );
+              } else {
+                this.message = message;
+              }
+            });
       } else {
         this.$message.error('请填写完全');
         this.isFull = true;
       }
+       this.$forceUpdate();
     },
     transformData() {
       const data = [];
@@ -179,20 +199,20 @@ export default {
       //       {label:null}
       //     ]
       //   });
-        this.databaseList.forEach(database => {
+      this.databaseList.forEach(database => {
         // 添加数据库节点
-          const databaseNode = {
-            label: database.name,
-            children: [
-              { label: null }
-            ]     
+        const databaseNode = {
+          label: database.name,
+          children: [
+            {label: null}
+          ]
         };
         data.push(databaseNode);
-        
+
         // console.log('push tableList => ',this.tableList);
         // 添加表节点
         if (this.tableList) {
-            this.tableList.forEach(table => {
+          this.tableList.forEach(table => {
             const tableNode = {
               label: table.name
             };
@@ -203,59 +223,60 @@ export default {
 
       this.treeData = data; // 将转换后的数据赋值给组件的 data 属性
     },
-    confirmDataBase(data) {  
-      console.log('confirmDataBase => ',data);
-          this.reqObj.database = data.label;
-          console.log('database =>',this.reqObj.database);
-          getAllTable({ database: this.reqObj.database }, this.$store.state.JSESSIONID)
-              .then(res => {
-                  this.tableList = res.data.data;
-                  console.log('confirmDataBase() tableList => ',this.tableList);
-                  const databaseNode = this.treeData.find(node => node.label === data.label);
-                  console.log('databaseNode',databaseNode)
-                  if (databaseNode) {
-                    databaseNode.children = [];
-                    this.tableList.forEach(table => {
-                        const tableNode = {
-                          label: table
-                        };
-                        databaseNode.children.push(tableNode);
-                    })
-                  }  
+    confirmDataBase(data) {
+      console.log('confirmDataBase => ', data);
+      this.reqObj.database = data.label;
+      console.log('database =>', this.reqObj.database);
+      getAllTable({database: this.reqObj.database}, this.$store.state.JSESSIONID)
+          .then(res => {
+            this.tableList = res.data.data;
+            console.log('confirmDataBase() tableList => ', this.tableList);
+            const databaseNode = this.treeData.find(node => node.label === data.label);
+            console.log('databaseNode', databaseNode)
+            if (databaseNode) {
+              databaseNode.children = [];
+              this.tableList.forEach(table => {
+                const tableNode = {
+                  label: table,
+                  leaf: true
+                };
+                databaseNode.children.push(tableNode);
               })
-          this.isGenCode = false;
-          this.isGenZip = false;
-       },
-      confirmTable(data) {
-          this.reqObj.table = data.label;
-          console.log('confirmTable-data => ',data);
-          this.isGenCode = true;
-      },
-      confirmPackageName() {
-          if (this.reqObj.packageName !== '' && this.isGenCode) {
-              generateCode({
-                  package_name: this.reqObj.packageName,
-                  table_name: this.reqObj.table
-              }, this.$store.state.JSESSIONID)
-                  .then(res => {
-                      const { code } = res.data;
-                      if (code === 200) {
-                          this.isGenZip = true;
-                          this.tip = "代码生成成功"
-                      }
-                  })
-          } else {
-              this.tip = "还不能填写 code 文件夹名哦";
-          }
-      },
-      confirmZipName() {
-          if (this.reqObj.zipName !== '' && this.isGenZip) {
-              this.zipHref = `${allPort.GENERATE_ZIP}/${this.reqObj.zipName}?JSESSIONID=${this.$store.state.JSESSIONID}`
-              this.tip = "请点击超链接";
-          } else {
-              this.tip = "还不能填写压缩包名哦";
-          }
-      },
+            }
+          })
+      this.isGenCode = false;
+      this.isGenZip = false;
+    },
+    confirmTable(data) {
+      this.reqObj.table = data.label;
+      console.log('confirmTable-data => ', data);
+      this.isGenCode = true;
+    },
+    confirmPackageName() {
+      if (this.reqObj.packageName !== '' && this.isGenCode) {
+        generateCode({
+          package_name: this.reqObj.packageName,
+          table_name: this.reqObj.table
+        }, this.$store.state.JSESSIONID)
+            .then(res => {
+              const {code} = res.data;
+              if (code === 200) {
+                this.isGenZip = true;
+                this.tip = "代码生成成功"
+              }
+            })
+      } else {
+        this.tip = "还不能填写 code 文件夹名哦";
+      }
+    },
+    confirmZipName() {
+      if (this.reqObj.zipName !== '' && this.isGenZip) {
+        this.zipHref = `${allPort.GENERATE_ZIP}/${this.reqObj.zipName}?JSESSIONID=${this.$store.state.JSESSIONID}`
+        this.tip = "请点击超链接";
+      } else {
+        this.tip = "还不能填写压缩包名哦";
+      }
+    },
   },
 };
 </script>
@@ -265,12 +286,15 @@ export default {
 .el-row {
   margin-bottom: 20px;
 }
+
 .el-row:last-child {
   margin-bottom: 0;
 }
+
 .el-col {
   border-radius: 4px;
 }
+
 .connect-url,
 .connect-name,
 .connect-pwd,
@@ -279,14 +303,17 @@ export default {
   align-items: center;
   margin: 1rem;
 }
+
 .connect-url label,
 .connect-name label {
   margin-right: 10px;
 }
-.span{
+
+.span {
   align-items: center;
 }
-.second-row-left-input{
+
+.second-row-left-input {
   margin-left: 2rem;
 }
 </style>

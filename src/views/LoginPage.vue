@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { infoVerify } from "../assets/js/login-register-page.js/infoVerify.js";
+import { infoVerify } from "@/assets/js/login-register-page.js/infoVerify.js";
 export default {
   name: "LoginPage",
   data() {
